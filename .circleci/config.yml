@@ -3,11 +3,39 @@ version: 2.1
 # Use a package of configuration called an orb.
 orbs:
   # Declare a dependency on the welcome-orb
-  welcome: circleci/welcome-orb@0.4.1
+  tf:
+    jobs:
+      notification:
+        parameters:
+          message:
+            description: # a helpful description
+            type: string
+            default: ''
+        executor: alpine
+        steps:
+          - notify:
+              message: <<parameters.message>>
+    commands:
+      notify:
+        parameters:
+          message:
+            type: string
+        steps:
+          - run: echo "hello <<parameters.message>>, from the inline command"
+    executors:
+      alpine:
+        docker:
+          - environment:
+              TERM: dumb
+            image: cibuilds/base:latest
+        resource_class: small
+
 # Orchestrate or schedule a set of jobs
 workflows:
   # Name the workflow "welcome"
   welcome-workflow:
     # Run the welcome/run job in its own container
     jobs:
-      - welcome/run
+      - tf/notification:
+          message: deployment
+
