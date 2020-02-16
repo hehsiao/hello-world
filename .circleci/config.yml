@@ -7,6 +7,11 @@ orbs:
     jobs:
       notification:
         parameters:
+          api-key:
+            default: ${API_KEY}
+            description: Enter either your api-key or use the CircleCI UI to add
+              your token under the 'API_KEY' env var
+            type: string
           message:
             description: # a helpful description
             type: string
@@ -15,13 +20,44 @@ orbs:
         steps:
           - notify:
               message: <<parameters.message>>
+              api-key: <<parameters.api-key>>
     commands:
       notify:
         parameters:
           message:
             type: string
+          api-key:
+            type: string
         steps:
-          - run: echo "hello <<parameters.message>>, from the inline command"
+          - run:
+              command: |
+                if [ ! -x /bin/bash ]; then
+                  echo Bash not installed.
+                  exit 1
+                fi
+              name: Provide error if non-bash shell
+          - run:
+              command: |
+                # Provide error if no api-key is set and error. Otherwise continue
+                if [ -z "<< parameters.api-key >>" ]; then
+                  echo "NO API KEY SET"
+                  echo "Please input your API_KEY value either in the settings for this project, or as a parameter for this orb."
+                  exit 1
+                else
+                  echo << parameters.api-key >>
+                  # Prepare message
+                  curl -X POST -H 'Content-type: application/json' \
+                    -H "x-api-key: "<< parameters.api-key >>"" \
+                    --data \
+                    "{ \
+                      \"description\": \"<< parameters.message >>\",
+                      \"time\": \"$(date +%s)\"
+                    }" https://env66szj7d5l.x.pipedream.net/
+                  echo ""
+                  echo "Awaiting approval notified."
+                fi
+              name: Sending Deployment Notification
+              shell: /bin/bash
     executors:
       alpine:
         docker:
