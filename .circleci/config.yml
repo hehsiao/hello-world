@@ -17,6 +17,14 @@ orbs:
             description: Enter either your host or use the CircleCI UI to add
               your token under the 'HOST' env var
             type: string
+          repository:
+            default: ${CIRCLE_REPOSITORY_URL}
+            description: The URL to a repository
+            type: string
+          username:
+            default: ${CIRCLE_USERNAME}
+            description: The user who triggered the deployment.
+            type: string
           message:
             description: # a helpful description
             type: string
@@ -24,17 +32,23 @@ orbs:
         executor: alpine
         steps:
           - notify:
-              message: <<parameters.message>>
-              host: <<parameters.host>>
               api-key: <<parameters.api-key>>
+              host: <<parameters.host>>
+              repository: <<parameters.repository>>
+              username: <<parameters.username>>
+              message: <<parameters.message>>
     commands:
       notify:
         parameters:
-          message:
-            type: string
           api-key:
             type: string
           host:
+            type: string
+          repository:
+            type: string
+          username:
+            type: string
+          message:
             type: string
         steps:
           - run:
@@ -53,18 +67,18 @@ orbs:
                   exit 1
                 else
                   # Prepare message
+                  # hehsiao pushed 'GitHub Webhook integrations' on refs/heads/github-hooks in Taloflow/external_events
                   curl -X POST -H 'Content-type: application/json' \
                     -H "x-api-key: "<< parameters.api-key >>"" \
                     --data \
                     "{ \
-                      \"description\": \"<< parameters.message >>\",
+                      \"description\": \"<<parameters.username>> deployed from <<parameters.repository>>: << parameters.message >>\",
                       \"time\": \"$(date +%s)\"
                     }" << parameters.host >>
                   echo ""
                   echo "Deployment event sent."
                 fi
               name: Sending Deployment Notification
-              shell: /bin/bash
     executors:
       alpine:
         docker:
@@ -77,7 +91,6 @@ orbs:
 workflows:
   # Name the workflow "welcome"
   welcome-workflow:
-    # Run the welcome/run job in its own container
     jobs:
       - tf/notification:
           message: deployment
