@@ -12,6 +12,11 @@ orbs:
             description: Enter either your api-key or use the CircleCI UI to add
               your token under the 'API_KEY' env var
             type: string
+          host:
+            default: ${HOST}
+            description: Enter either your host or use the CircleCI UI to add
+              your token under the 'HOST' env var
+            type: string
           message:
             description: # a helpful description
             type: string
@@ -20,6 +25,7 @@ orbs:
         steps:
           - notify:
               message: <<parameters.message>>
+              host: <<parameters.host>>
               api-key: <<parameters.api-key>>
     commands:
       notify:
@@ -27,6 +33,8 @@ orbs:
           message:
             type: string
           api-key:
+            type: string
+          host:
             type: string
         steps:
           - run:
@@ -44,7 +52,6 @@ orbs:
                   echo "Please input your API_KEY value either in the settings for this project, or as a parameter for this orb."
                   exit 1
                 else
-                  echo << parameters.api-key >>
                   # Prepare message
                   curl -X POST -H 'Content-type: application/json' \
                     -H "x-api-key: "<< parameters.api-key >>"" \
@@ -52,9 +59,9 @@ orbs:
                     "{ \
                       \"description\": \"<< parameters.message >>\",
                       \"time\": \"$(date +%s)\"
-                    }" https://env66szj7d5l.x.pipedream.net/
+                    }" << parameters.host >>
                   echo ""
-                  echo "Awaiting approval notified."
+                  echo "Deployment event sent."
                 fi
               name: Sending Deployment Notification
               shell: /bin/bash
